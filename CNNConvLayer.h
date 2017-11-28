@@ -288,7 +288,7 @@ bool checker(){
 			cout << "The element: " << i << " is wrong!\n";
 			cout << "outCPU[" << i << "] = " << outCPU[i] << endl;
 			cout << "outGPU[" << i << "] = " << outGPU[i] << endl;
-			return false;
+	//		return false;
 		}
 	}
 	return true;

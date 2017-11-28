@@ -87,11 +87,11 @@ void convLayerGPU(int* filt_GPU, int* inNeu_GPU, int* out_GPU_kernel)
 
 	if(i < FILTNUM*FMSIZE*FMSIZE){
 		sum = 0;
-		fn = i/FMSIZE/FMSIZE;
+		fn = i/(FMSIZE*FMSIZE);
 		for(sli = 0; sli < FMDEPTH; sli++){
 			for(y = 0; y < FILTSIZE; y++){
 				for(x = 0; x < FILTSIZE; x++){
-					fmy = (i/FMSIZE)%FMSIZE;
+					fmy = i%fmArea/FMSIZE;
 					fmx = i%FMSIZE;						
 					ifmy = fmy - FILTSIZE / 2 + y;	
 					ifmx = fmx - FILTSIZE / 2 + x;
@@ -103,10 +103,11 @@ void convLayerGPU(int* filt_GPU, int* inNeu_GPU, int* out_GPU_kernel)
 			}
 		}
 		__syncthreads();
+		
 		for (y = 0; y < 3; y++){
 			for (x = 0; x < 3; x++)	{
 				if (fmy % 3 == y && fmx % 3 == x){
-					outIdx = fn*fmArea + fmy/3*FMSIZE/3 + fmx/3;
+					outIdx = fn*outArea + fmy/3*FMSIZE/3 + fmx/3;	
 					int tmp = out_GPU_kernel[outIdx];
 					if (sum > tmp)
 						out_GPU_kernel[outIdx] = sum;
@@ -147,7 +148,7 @@ int main()
 	cudaMemcpy(filt_GPU, filt, FILTSIZE*FILTSIZE*FMDEPTH*FILTNUM*sizeof(int), cudaMemcpyHostToDevice);
 	cudaMemcpy(inNeu_GPU, inNeu, FMSIZE*FMSIZE*FMDEPTH*sizeof(int), cudaMemcpyHostToDevice);
 	/***	Lunch your CUDA Kernel here	***/
-	convLayerGPU<<<(FILTNUM*FMSIZE*FMSIZE+8191)/8192,8192>>>(filt_GPU, inNeu_GPU, out_GPU_kernel); // Lunch the kernel
+	convLayerGPU<<<(FILTNUM*FMSIZE*FMSIZE+512)/512, 512>>>(filt_GPU, inNeu_GPU, out_GPU_kernel); // Lunch the kernel
 	cudaDeviceSynchronize(); // Do synchronization before clock_gettime()
 	cudaMemcpy(outGPU, out_GPU_kernel, FILTNUM * FMSIZE/3 * FMSIZE/3*sizeof(int), cudaMemcpyDeviceToHost);
 	/***	Lunch your CUDA Kernel here	***/
