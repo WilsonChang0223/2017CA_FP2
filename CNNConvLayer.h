@@ -16,6 +16,9 @@ int*outNeu;
 int*outCPU;
 int*outGPU;
 
+int filtCooSize;
+int inNeuCooSize;
+
 int *filtCooNNZ;
 int *filtCooData;
 int *filtCooRow;
@@ -112,8 +115,11 @@ void initCoo()
 			ifs >> str; 
 			ifs >> str >> nnz; 
 			idx = i*FMDEPTH + j;
-			filtCooNNZ[idx] = nnz;
-			
+			if (idx == 0)
+				filtCooNNZ[idx] = nnz;
+			else		
+				filtCooNNZ[idx] = filtCooNNZ[idx-1] + nnz;
+
 			if(i == 0 && j==0){
 				filtCooData = new int [nnz];
 				filtCooRow  = new int [nnz];
@@ -172,10 +178,9 @@ void initCoo()
 		
 		}
 	}
-	ifs.close();
-	
-	
-	
+	filtCooSize = current_nnz;
+
+	ifs.close();	
 
 	current_nnz=0;
 	inNeuCooNNZ = new int [FMDEPTH];
@@ -189,6 +194,10 @@ void initCoo()
 		ifs >> str; 
 		ifs >> str >> nnz; 
 		inNeuCooNNZ[i] = nnz;
+		if (i == 0)
+			inNeuCooNNZ[i] = nnz;
+		else		
+			inNeuCooNNZ[i] = inNeuCooNNZ[i-1] + nnz;
 		
 		if(i == 0){
 				inNeuCooData = new int [nnz];
@@ -246,7 +255,8 @@ void initCoo()
 		current_nnz=current_nnz+nnz;
 		
 	}
-	
+	inNeuCooSize = current_nnz;
+
 	ifs.close();
 	
 	
@@ -288,7 +298,7 @@ bool checker(){
 			cout << "The element: " << i << " is wrong!\n";
 			cout << "outCPU[" << i << "] = " << outCPU[i] << endl;
 			cout << "outGPU[" << i << "] = " << outGPU[i] << endl;
-	//		return false;
+//				return false;
 		}
 	}
 	return true;
