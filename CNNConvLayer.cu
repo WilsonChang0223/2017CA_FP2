@@ -125,8 +125,10 @@ void convLayerGPU(int *filtCooNNZ_dev,int *filtCooData_dev,int *filtCooRow_dev,i
 	int FiltNumIdx = blockNum/FMDEPTH;
 	int FmDepthIdx = blockNum%FMDEPTH;
 
-	for (int Idx = i; Idx < tmpVol; Idx += blockDim.x*gridDim.x)
-		tem_out_dev[Idx] = 0;	
+	for (int Idx = i%(threadperblock*FMDEPTH); Idx < fmArea; Idx += threadperblock*FMDEPTH){
+		int index = Idx + FiltNumIdx* fmArea;
+		tem_out_dev[index] = 0;	
+	}
 	__syncthreads();
 
 	if (blockNum < FMDEPTH* FILTNUM){
@@ -212,10 +214,11 @@ int main()
 	cout << "CPU time for executing a typical convolutional layer = "  <<  ((float)convLayerCPUExecTime)/1000 << "ms" << endl;
   
 	//Convolution by GPU   
-	clock_gettime(CLOCK_REALTIME, &time_begin);
+
 	init_Mem_GPU();
+	clock_gettime(CLOCK_REALTIME, &time_begin);
 	/***	Lunch your CUDA Kernel here	***/
-	convLayerGPU<<<(FILTNUM*FMDEPTH)/128+1, 1024>>>(filtCooNNZ_GPU,filtCooData_GPU,filtCooRow_GPU,filtCooCol_GPU,inNeuCooNNZ_GPU,inNeuCooData_GPU,inNeuCooRow_GPU,inNeuCooCol_GPU,tem_out_GPU,out_GPU); // Lunch the kernel
+	convLayerGPU<<<FILTNUM, 8*FMDEPTH>>>(filtCooNNZ_GPU,filtCooData_GPU,filtCooRow_GPU,filtCooCol_GPU,inNeuCooNNZ_GPU,inNeuCooData_GPU,inNeuCooRow_GPU,inNeuCooCol_GPU,tem_out_GPU,out_GPU); // Lunch the kernel
 
 	cudaDeviceSynchronize(); // Do synchronization before clock_gettime()
 
